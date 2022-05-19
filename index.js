@@ -1,60 +1,77 @@
 const express = require("express");
 const app = express();
 const nanoid = require("nanoid");
+const pool = require("./sql/connection");
 
 app.use(express.json());
 
-const data = require("./data/index");
-
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8888;
 
 //GET ALL
-app.get("/data", (req, res) => {
-  res.json(data.games);
+app.get("/games", (req, res) => {
+  pool.query(`SELECT * FROM games`, function (err, games, fields) {
+    res.json(games);
+  });
 });
 
 //GET BY ID
 app.get("/games/:id", (req, res) => {
   const { id } = req.params;
-  const foundGame = data.games.find((game) => game.id === Number(id));
-  res.json(foundGame);
+  pool.query(
+    `SELECT * FROM games WHERE id = ?`,
+    [id],
+    function (err, game, fields) {
+      res.json(game);
+    }
+  );
 });
 
 //ADD NEW GAME
 app.post("/games", (req, res) => {
-  data.games.push({ id: nanoid.nanoid(), ...req.body });
-  res.json(data.games);
+  pool.query(
+    "INSERT INTO games (id, title, release_year, box_art, description, trailer, hero, developer) VALUES (?,?,?,?,?,?,?,?)",
+    [
+      null,
+      req.body.title,
+      req.body.release_year,
+      req.body.box_art,
+      req.body.description,
+      req.body.trailer,
+      req.body.hero,
+      req.body.developer,
+    ],
+    function (err, game, fields) {
+      if (err) console.log({ err: err });
+      res.json(game);
+    }
+  );
 });
 
 //UPDATE GAME BY ID
 app.put("/games/:id", (req, res) => {
   const { id } = req.params;
-
-  const foundGame = data.games.find((game) => game.id === Number(id));
-  console.log(foundGame);
-
-  const foundGameIndex = data.games.findIndex((game) => game.id === Number(id));
-  console.log(foundGameIndex);
-
-  let updatedGame = {
-    ...foundGame,
-    ...req.body,
-  };
-
-  //SWAP OBJECT FOR UPDATED OBJECT
-  data.games.splice(foundGameIndex, 1, updatedGame);
-  res.json(data.games(updatedGame));
+  pool.query(
+    "UPDATE games SET ? WHERE id = ?",
+    [req.body, id],
+    function (err, game, fields) {
+      if (err) console.log({ err: err });
+      res.json(game);
+    }
+  );
 });
 
 //DELETE AN OBJECT
 app.delete("/games/:id", (req, res) => {
-  console.log(req.params.id);
   const { id } = req.params;
 
-  const filteredGames = data.games.filter((game) => game.id !== Number(id));
-  console.log(foundGame);
-
-  res.json(filteredGames);
+  pool.query(
+    "DELETE FROM games WHERE id = ?",
+    [id],
+    function (err, game, fields) {
+      if (err) console.log({ err: err });
+      res.json(game);
+    }
+  );
 });
 
 app.listen(PORT, () => console.log(`App listening on PORT ${PORT}`));
