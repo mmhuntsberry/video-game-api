@@ -2,7 +2,6 @@
 const mysql = require("mysql2");
 
 require("dotenv").config();
-console.log(process.env.DATABASE_USER);
 
 const {
   DATABASE_USER,
